@@ -1,70 +1,105 @@
 #include <iostream>
 #include <string>
+#include <cctype>
 using namespace std;
-
-string caesarCipher(string text, int shift) {
-    string result = "";
-    for (char& c : text) {
-        if (isalpha(c)) {
-            char base = islower(c) ? 'a' : 'A';
-            c = (c - base + shift) % 26 + base;
+class CaesarCipher {
+public:
+    CaesarCipher(int shift) : shiftValue(shift) {}
+    string encrypt(const string &text) {
+        string encryptedText = "";
+        for (char ch : text) {
+            if (isalpha(ch)) {
+                char base = islower(ch) ? 'a' : 'A';
+                encryptedText += (ch - base + shiftValue) % 26 + base;
+            } else {
+                encryptedText += ch;
+            }
         }
-        result += c;
+        return encryptedText;
     }
-    return result;
-}
+    string decrypt(const string &text) {
+        string decryptedText = "";
+        for (char ch : text) {
+            if (isalpha(ch)) {
+                char base = islower(ch) ? 'a' : 'A';
+                decryptedText += (ch - base - shiftValue + 26) % 26 + base;
+            } else {
+                decryptedText += ch;
+            }
+        }
+        return decryptedText;
+    }
 
-string rleEncode(const string& str) {
+private:
+    int shiftValue;
+};
+
+string encRLE(const string& source) {
     string encoded = "";
     int count = 1;
-    for (size_t i = 0; i < str.length(); i++) {
-        if (i + 1 < str.length() && str[i] == str[i + 1]) {
+
+    for (int i = 1; i < source.length(); i++) {
+        if (source[i] == source[i - 1]) {
             count++;
         } else {
-            encoded += str[i];
+            while (count > 255) {
+                encoded += source[i - 1];
+                encoded += "255";
+                count -= 255;
+            }
+            encoded += source[i - 1];
             encoded += to_string(count);
             count = 1;
         }
     }
+
+    while (count > 255) {
+        encoded += source[source.length() - 1];
+        encoded += "255";
+        count -= 255;
+    }
+    encoded += source[source.length() - 1];
+    encoded += to_string(count);
+
     return encoded;
 }
-
-string rleDecode(const string& str) {
+string decRLE(const string& encoded) {
     string decoded = "";
-    for (size_t i = 0; i < str.length(); i++) {
-        char ch = str[i];
+    int i = 0;
+
+    while (i < encoded.length()) {
+        char character = encoded[i++];
         int count = 0;
-        while (i + 1 < str.length() && isdigit(str[i + 1])) {
-            count = count * 10 + (str[++i] - '0');
+
+        while (i < encoded.length() && isdigit(encoded[i])) {
+            count = count * 10 + (encoded[i] - '0');
+            i++;
         }
-        decoded += string(count, ch);
+        for (int j = 0; j < count; j++) {
+            decoded += character;
+        }
     }
     return decoded;
 }
 
-string encrypt(const string& text, int shift) {
-    string caesarEncrypted = caesarCipher(text, shift);
-    return rleEncode(caesarEncrypted);
-}
-
-string decrypt(const string& text, int shift) {
-    string rleDecoded = rleDecode(text);
-    return caesarCipher(rleDecoded, 26 - shift);
-}
-
 int main() {
-    string text;
-    int shift;
-    cout << "Enter the text: ";
-    getline(cin, text);
-    cout << "Enter the Caesar shift value: ";
-    cin >> shift;
+    string text = "Hello, World!";
+    int shiftValue = 3;
 
-    string encryptedText = encrypt(text, shift);
-    cout << "Encrypted text: " << encryptedText << endl;
+    CaesarCipher cipher(shiftValue);
+    cout << "Plaintext: " << text << endl;
 
-    string decryptedText = decrypt(encryptedText, shift);
-    cout << "Decrypted text: " << decryptedText << endl;
+    string caesarEncrypted = cipher.encrypt(text);
+    cout << "Caesar Encrypted: " << caesarEncrypted << endl;
+
+    string caesarDecrypted = cipher.decrypt(caesarEncrypted);
+    cout << "Caesar Decrypted: " << caesarDecrypted << endl;
+
+    string rleEncoded = encRLE(caesarEncrypted);
+    cout << "RLE Encoded: " << rleEncoded << endl;
+
+    string rleDecoded = decRLE(rleEncoded);
+    cout << "RLE Decoded: " << rleDecoded << endl;
 
     return 0;
 }
